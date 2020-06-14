@@ -16,22 +16,25 @@ import java.util.Map;
 public class main4 {
 	static int[][] memo;
 	static byte[][] pairs;
-	static byte[][] e_dist;
+	//static byte[][] e_dist;
 	static String allowed_punct = ",.!?;:،؟؛";
 
 	// TODO decide allowed characters dictionary 
 	public static void main(String[] str) throws IOException {
 		initilize_char_dict();
-		final int NUM_OF_WORDS = 2500; //49700; // 35626; //this is the length of kuzari.aj in words
+		final int NUM_OF_WORDS = 2500000
+				; //49700; // 35626; //this is the length of kuzari.aj in words
 		// 49667 the length of gniza kuzari in words.
 		int start = 0;
-		// KUZARI
+		
 		// need to replace in file <span class="hebTxt"> to </span>
 		System.out.println("NOTE: need to replace in input file all the <span class=\"hebTxt\"> to </span>");
 		System.out.println("print any key to continue...");
 		System.in.read();
 		String JA_path = "C:\\Users\\Owner\\copy2_ONE_BOOK_SELENIUM_without_hebrew.txt";
+		//JA_path = "C:\\Users\\Owner\\kuzari.txt";//49762>49660
 		String AR_path = "C:\\Users\\Owner\\JUDEO-ARABIC\\file_from_kfir\\דאטא ערוך שלי מאקסל\\WITHOUT_FOOTNOTES_copy_Kuzari-All-LAST-Corrected-Last.txt";
+
 		boolean emunot = false;
 		if (emunot) {
 			JA_path = "C:\\Users\\Owner\\JUDEO-ARABIC\\emunot_deot_JA_gniza_webs_without_hebrew.txt"; // remove page
@@ -39,19 +42,14 @@ public class main4 {
 																										// header ,
 																										// change hebrew
 																										// tags
+			JA_path="C:\\Users\\Owner\\emunot.txt";  // 76603>61600 //much more words
 			AR_path = "C:\\Users\\Owner\\JUDEO-ARABIC\\emunot_deot_bashir.txt";
 		}
 
 		Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 		long milisec = timestamp.getTime();
 
-		String output = "C:\\Users\\Owner\\JUDEO-ARABIC\\file_from_kfir\\for_ctc_train22_FRIDBERG_" + milisec + ".txt";
-
-		// String output_path =
-		// "C:\\Users\\Owner\\JUDEO-ARABIC\\file_from_kfir\\for_ctc_train22_FRIDBERG5__.txt";
-		// String output_path_pairs =
-		// "C:\\Users\\Owner\\JUDEO-ARABIC\\file_from_kfir\\for_ctc_train22_pairs_FRIDBERG5.txt";
-//		C:\Users\Owner\JUDEO-ARABIC\file_from_kfir\for_ctc_train22_pairs_FRIDBERG5.txt
+		String output = "C:\\Users\\Owner\\JUDEO-ARABIC\\data\\"+ milisec + ".txt";
 
 		String t1 = read_data_from_file(start, NUM_OF_WORDS, JA_path);
 		String t2 = read_data_from_file(start, NUM_OF_WORDS, AR_path);
@@ -85,7 +83,7 @@ public class main4 {
 
 		memo = new int[2][text2.length + 1]; // acctually don't need just last line!!!or two
 		pairs = new byte[text1.length + 1][text2.length + 1];
-		e_dist = new byte[text1.length + 1][text2.length + 1]; // TODO maybe don't need this matrix
+		//e_dist = new byte[text1.length + 1][text2.length + 1]; // TODO maybe don't need this matrix
 		long startTime = System.nanoTime();
 
 		// #######################################
@@ -117,65 +115,31 @@ public class main4 {
 
 		// FileWriter fw = new FileWriter(output_path);
 		// FileWriter fw_pairs = new FileWriter(output_path_pairs);
-		FileWriter fw_pairs_clean = new FileWriter(output_path_pairs + "clean.txt");
+		FileWriter fw_pairs_clean = new FileWriter(output_path_pairs);
 		//int accum = 0;
 		//String heb = "";
 		//String ar = "";
 		for (String pair : alinged_pairs) {
 			System.out.println(pair);
-			// fw_pairs.write(pair+'\n');
-//			if (accum > LINE_LIM) {
-//				fw.write(heb.trim() + '\t' + ar.trim() + '\n');
-//				heb = "";
-//				ar = "";
-//				accum = 0;
-//			}
-			//String pattern = "<(.*?),(.*?)>(\\d+?)"; // TODO change to tab seperated triplet
-			//Pattern r = Pattern.compile(pattern);
-
-			// Now create matcher object.
-		//	Matcher m = r.matcher(pair);
 			String[] splited=pair.split("\t");
-//			if (!m.find()) {
-//				System.err.println("regex not matched on pair" + pattern);
-//			}		
-			String h =splited[0];// m.group(1);
-			String a =splited[1];// m.group(2);
-			int d = Integer.parseInt(splited[2]);//m.group(3));
-
+			String h =splited[0];
+			String a =splited[1];
+			int d = Integer.parseInt(splited[2]);
+			d=edit_dist(h, a);
 			if (h.length() != 0 && h.charAt(0) == 'H' || contain_nikud(h) || contains_hebrew(a)) {
-				// fw_pairs.write("NOT skiping: " + pair+'\n');
 				fw_pairs_clean.write(h+"\tH"+a+"\t" + d + '\n');
-				//fw_pairs_clean.write("H\tH\t" + d + '\n');
-				//heb += " " + h;
-				//ar += " H"+a;
-			//	accum += 2; // accum +=h.length() + 1
 			} else if (h.length() == 0 && a.length() == 1 && allowed_punct.contains(a)) {
-				// fw_pairs.write("NOT skiping: " + pair+'\n');
 				fw_pairs_clean.write(a + '\t' + a + '\t' + d + '\n');
-				//heb += " " + a; // heb +=" " + a;
-				//ar += " " + a; // ar +=" " + a;
-			//	accum += 2;
-			} else if (a.length() == 0 && h.length() == 1 && allowed_punct.contains(h)) {
-				// fw_pairs.write("NOT skiping: " + pair+'\n');
+			} else if (a.length() == 0 && h.length() == 1 && allowed_punct.contains(h)) {			
 				fw_pairs_clean.write(h + '\t' + h + '\t' + d + '\n');
-				//heb += " " + h; // heb += " H";
-				//ar += " " + h; // ar += " H"; //or maybe no space?
-			//	accum += 2; // accum += 2;
 			} else if (h.length() == 0 || a.length() == 0) {
-				// System.out.println("skiping: " + pair);
 				if (h.length() == 0) {
-					fw_pairs_clean.write("\tS\t" + d + '\n'); //SSS is for SKIP
+					fw_pairs_clean.write("\tS" + a + '\t' + d + '\n'); //SSS is for SKIP
 				} else {
-					fw_pairs_clean.write("S\t\t" + d + '\n');
+					fw_pairs_clean.write("S"+ h + "\t\t" + d + '\n');
 				}
-				//fw_pairs_clean.write(h + '\t' + a + '\t' + d + '\n');
-				// fw_pairs.write("skiping: " + pair+'\n');
-//				System.out.println(" (h.length()/2.0):\n"+h.length()/2.0);
-//				System.out.println("e_dist:\n"+m.group(3));
-//				System.out.println("h:"+h);
 			}else if(d > Math.max(a.length(), h.length()) / 2.0){
-				fw_pairs_clean.write("S\tS\t" + d + '\n');
+				fw_pairs_clean.write("S"+h + "\tS" + a + '\t' + d + '\n');
 			} else if (allowed_punct.contains(h) && allowed_punct.contains(a)) {
 //				if (h.equals(a)) { //DON'T NEED THIS CONDITION BECAUSE SAME ACTION
 //					heb += " " + h;
@@ -200,8 +164,8 @@ public class main4 {
 	}
 
 	private static boolean contains_hebrew(String a) {
-		// TODO Auto-generated method stub
-		return false;
+		// TODO Auto-generated method stub		
+		return a.matches(".*[א-ת].*");
 	}
 
 	private static boolean contain_nikud(String str) {
@@ -306,31 +270,37 @@ public class main4 {
 		List<String> my_res = new ArrayList<String>();
 		while (h >= 0 && w >= 0) {
 			short cont = pairs[h][w];
-			short ed = 0;
+			//short ed = 0;
 			String w1 = null;
 			String w2 = null;
 			switch (cont) {
 			case (0):// --
-				ed = e_dist[h][w];
+				//ed = e_dist[h][w];
+//				if (h==0 && w==0) {
+//					ed=0;
+//				}else{
+//					ed=(short) edit_dist(text1[h - 1], text2[w - 1]);
+//				}
 				w1 = text1[--h];
 				w2 = text2[--w];
 				break;
 			case (1):// -=
-				ed = e_dist[h][w];// ==length(w1)?
+				//ed = e_dist[h][w];// ==length(w1)?				
+				//ed=(short) edit_dist(text1[h - 1], text2[w - 1]);
 				w1 = text1[--h];
 				w2 = "";
-				assert (ed == w1.length());
+			//	assert (ed == w1.length());
 				break;
 			case (2):// =-
-				ed = e_dist[h][w];// ==length(w2)?
+				//ed = e_dist[h][w];// ==length(w2)?
 				w1 = "";
 				w2 = text2[--w];
-				assert (ed == w2.length());
+			//	assert (ed == w2.length());
 				break;
 			case (-1):
 				return my_res;
 			}
-			String first_pair = w1 + "\t" + w2 + "\t" + ed; 
+			String first_pair = w1 + "\t" + w2 + "\t0"; 
 			my_res.add(0, first_pair);
 
 		}
@@ -345,7 +315,7 @@ public class main4 {
 		// initialize cell [0,0]
 		pairs[0][0] = -1;
 		memo[0][0] = 0;
-		e_dist[0][0] = 0;
+		//e_dist[0][0] = 0;
 
 		// initialize first raw
 		// String res = "";
@@ -357,7 +327,7 @@ public class main4 {
 			pairs[0][j] = 2;
 			memo[0][j] = mem;
 			// e_dist[0][j] = (byte) text2[j - 1].length();
-			e_dist[0][j] = (byte) edit_dist("", text2[j - 1]);
+			//e_dist[0][j] = (byte) edit_dist("", text2[j - 1]);
 
 		}
 		switch_mem_raw = my_switch(switch_mem_raw);
@@ -366,7 +336,7 @@ public class main4 {
 			System.out.println(i + '\r');
 			pairs[i][0] = 1;
 			memo[switch_mem_raw][0] = text1[i - 1].length() + memo[my_switch(switch_mem_raw)][0];
-			e_dist[i][0] = (byte) text1[i - 1].length();
+			//e_dist[i][0] = (byte) text1[i - 1].length();
 			for (int j = 1; j <= len2; j++) {
 				// System.out.println(i+" "+j);
 				int e_dist1 = edit_dist(text1[i - 1], text2[j - 1]);
@@ -378,18 +348,18 @@ public class main4 {
 				if (short_short <= Math.min(short_same, same_short)) {
 					memo[switch_mem_raw][j] = short_short;
 					pairs[i][j] = 0;// " <" + text1[i-1] + "," + text2[j-1] + ">" + e_dist+" --";
-					e_dist[i][j] = (byte) e_dist1;
+					//e_dist[i][j] = (byte) e_dist1;
 
 				} else if (short_same < same_short) {
 					memo[switch_mem_raw][j] = short_same;
 					pairs[i][j] = 1;// " <" + text1[i-1] + ",>" + text1[i-1].length() +" -=";
-					e_dist[i][j] = (byte) text1[i - 1].length();
+				//	e_dist[i][j] = (byte) text1[i - 1].length();
 
 				} else {
 					memo[switch_mem_raw][j] = same_short;
 					pairs[i][j] = 2;// " <,"+text2[j-1]+">" + text2[j-1].length() +" =-";
 					// e_dist[i][j] = (byte) text2[j - 1].length();
-					e_dist[i][j] = (byte) edit_dist("", text2[j - 1]);
+				//	e_dist[i][j] = (byte) edit_dist("", text2[j - 1]);
 
 				}
 			}
